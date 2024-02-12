@@ -1,4 +1,3 @@
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Main {
@@ -8,79 +7,55 @@ public class Main {
     private static AtomicInteger word5 = new AtomicInteger(0);
 
     public static void main(String[] args) {
-        Random random = new Random();
         String[] texts = new String[100_000];
         for (int i = 0; i < texts.length; i++) {
-            texts[i] = generateText("abc", 3 + random.nextInt(3));
+            texts[i] = generateText("abc", 3 + (int) (Math.random() * 3));
         }
 
-        Thread thread1 = new Thread(() -> checkPalindromeWords(texts, 3, word3));
-        Thread thread2 = new Thread(() -> checkSameLetterWords(texts, 4, word4));
-        Thread thread3 = new Thread(() -> checkAscendingWords(texts, 5, word5));
-
-        thread1.start();
-        thread2.start();
-        thread3.start();
-
-        try {
-            thread1.join();
-            thread2.join();
-            thread3.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        for (String text : texts) {
+            new Thread(() -> checkBeauty(text)).start();
         }
 
-        System.out.println("Красивых слов с длиной 3: " + word3);
-        System.out.println("Красивых слов с длиной 4: " + word4);
-        System.out.println("Красивых слов с длиной 5: " + word5);
+        while (Thread.activeCount() > 1) {
+            Thread.yield();
+        }
+
+        System.out.println("Красивых слов с длиной 3: " + word3.get() + " шт");
+        System.out.println("Красивых слов с длиной 4: " + word4.get() + " шт");
+        System.out.println("Красивых слов с длиной 5: " + word5.get() + " шт");
     }
 
     public static String generateText(String letters, int length) {
-        Random random = new Random();
         StringBuilder text = new StringBuilder();
         for (int i = 0; i < length; i++) {
-            text.append(letters.charAt(random.nextInt(letters.length())));
+            text.append(letters.charAt((int) (Math.random() * letters.length())));
         }
         return text.toString();
     }
 
+    public static void checkBeauty(String word) {
+        if (isPalindrome(word) || isSameLetterWord(word) || isIncreasingLetters(word)) {
+            if (word.length() == 3) {
+                word3.incrementAndGet();
+            } else if (word.length() == 4) {
+                word4.incrementAndGet();
+            } else if (word.length() == 5) {
+                word5.incrementAndGet();
+            }
+        }
+    }
+
     public static boolean isPalindrome(String word) {
-        int length = word.length();
-        for (int i = 0; i < length / 2; i++) {
-            if (word.charAt(i) != word.charAt(length - 1 - i)) {
-                return false;
-            }
-        }
-        return true;
+        return word.equals(new StringBuilder(word).reverse().toString());
     }
 
-    public static void checkPalindromeWords(String[] texts, int length, AtomicInteger counter) {
-        for (String text : texts) {
-            if (text.length() == length && isPalindrome(text)) {
-                counter.incrementAndGet();
-            }
-        }
+    public static boolean isSameLetterWord(String word) {
+        return word.matches("^([a-c])\\1*$");
     }
 
-    public static void checkSameLetterWords(String[] texts, int length, AtomicInteger counter) {
-        for (String text : texts) {
-            if (text.length() == length && text.matches("^(.)\\1*$")) {
-                counter.incrementAndGet();
-            }
-        }
-    }
-
-    public static void checkAscendingWords(String[] texts, int length, AtomicInteger counter) {
-        for (String text : texts) {
-            if (text.length() == length && isAscending(text)) {
-                counter.incrementAndGet();
-            }
-        }
-    }
-
-    public static boolean isAscending(String word) {
-        for (int i = 0; i < word.length() - 1; i++) {
-            if (word.charAt(i) > word.charAt(i + 1)) {
+    public static boolean isIncreasingLetters(String word) {
+        for (int i = 1; i < word.length(); i++) {
+            if (word.charAt(i) < word.charAt(i - 1)) {
                 return false;
             }
         }
